@@ -1,4 +1,4 @@
-use macroquad::prelude::*;
+use macroquad::{models::Vertex, prelude::*};
 // use glam::vec3;
 
 const MOVE_SPEED: f32 = 0.1;
@@ -36,9 +36,9 @@ async fn main() {
     let mut position = vec3(0.0, 1.0, 0.0);
     let mut last_mouse_position: Vec2 = mouse_position().into();
 
-    let mut grabbed = true;
+    let mut grabbed = false;
     set_cursor_grab(grabbed);
-    show_mouse(false);
+    show_mouse(true);
 
     loop {
         let delta = get_frame_time();
@@ -51,18 +51,25 @@ async fn main() {
             set_cursor_grab(grabbed);
             show_mouse(!grabbed);
         }
-
-        if is_key_down(KeyCode::Up) {
-            position += front * MOVE_SPEED;
+        let mut velocity = vec3(0.0, 0.0, 0.0);
+        if is_key_down(KeyCode::W) {
+            velocity += vec3(yaw.cos(), 0.0, yaw.sin());
         }
-        if is_key_down(KeyCode::Down) {
-            position -= front * MOVE_SPEED;
+        if is_key_down(KeyCode::S) {
+            velocity -= vec3(yaw.cos(), 0.0, yaw.sin());
         }
-        if is_key_down(KeyCode::Left) {
-            position -= right * MOVE_SPEED;
+        if is_key_down(KeyCode::A) {
+            velocity -= right;
         }
-        if is_key_down(KeyCode::Right) {
-            position += right * MOVE_SPEED;
+        if is_key_down(KeyCode::D) {
+            velocity += right;
+        }
+        position += velocity * MOVE_SPEED;
+        if is_key_down(KeyCode::Space) {
+            position += world_up * 0.03;
+        }
+        if is_key_down(KeyCode::LeftShift) {
+            position -= world_up * 0.03;
         }
 
         let mouse_position: Vec2 = mouse_position().into();
@@ -121,7 +128,18 @@ async fn main() {
         draw_text("First Person Camera", 10.0, 20.0, 30.0, BLACK);
 
         draw_text(
-            format!("X: {} Y: {}", mouse_position.x, mouse_position.y).as_str(),
+            format!("FPS: {}", get_fps()).as_str(),
+            10.0,
+            44.0,
+            30.0,
+            BLACK,
+        );
+        draw_text(
+            format!(
+                "X: {:.2} Y: {:.2} Z: {:.2}",
+                position.x, position.y, position.z
+            )
+            .as_str(),
             10.0,
             48.0 + 18.0,
             30.0,
@@ -134,7 +152,18 @@ async fn main() {
             30.0,
             BLACK,
         );
-
+        draw_text(
+            format!(
+                "Yaw: {:.2} Pitch: {:.2}",
+                yaw.to_degrees(),
+                pitch.to_degrees(),
+            )
+            .as_str(),
+            10.0,
+            48.0 + 58.0,
+            30.0,
+            BLACK,
+        );
         next_frame().await
     }
 }
