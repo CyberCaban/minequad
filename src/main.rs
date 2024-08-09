@@ -14,8 +14,131 @@ fn conf() -> Conf {
     }
 }
 
+struct BlockTexture {
+    top: Texture2D,
+    bottom: Texture2D,
+    front: Texture2D,
+    back: Texture2D,
+    left: Texture2D,
+    right: Texture2D,
+}
+
+enum BlockType {
+    Stone,
+    Grass,
+}
+
+struct Block {
+    block_type: BlockType,
+    texture: BlockTexture,
+    position: Vec3,
+}
+
+fn vert(pos: Vec3, uv: Vec2) -> Vertex {
+    Vertex {
+        position: pos,
+        uv,
+        color: WHITE,
+    }
+}
+
+impl Block {
+    fn new(block_type: BlockType, position: Vec3, texture: Texture2D) -> Self {
+        let texture = match block_type {
+            BlockType::Stone => BlockTexture {
+                top: texture.clone(),
+                bottom: texture.clone(),
+                front: texture.clone(),
+                back: texture.clone(),
+                left: texture.clone(),
+                right: texture.clone(),
+            },
+            BlockType::Grass => BlockTexture {
+                top: texture.clone(),
+                bottom: texture.clone(),
+                front: texture.clone(),
+                back: texture.clone(),
+                left: texture.clone(),
+                right: texture.clone(),
+            },
+        };
+
+        Self {
+            block_type,
+            texture,
+            position,
+        }
+    }
+
+    fn make_mesh(&self) {
+        let mesh = Mesh {
+            vertices: vec![
+                // bottom
+                vert(self.position + vec3(0.0, 0.0, 0.0), vec2(1.0, 1.0)),
+                vert(self.position + vec3(1.0, 0.0, 0.0), vec2(0.0, 1.0)),
+                vert(self.position + vec3(1.0, 0.0, 1.0), vec2(0.0, 0.0)),
+                vert(self.position + vec3(0.0, 0.0, 0.0), vec2(1.0, 1.0)),
+                vert(self.position + vec3(0.0, 0.0, 1.0), vec2(1.0, 0.0)),
+                vert(self.position + vec3(1.0, 0.0, 1.0), vec2(0.0, 0.0)),
+                // top
+                vert(self.position + vec3(0.0, 1.0, 0.0), vec2(0.0, 0.0)),
+                vert(self.position + vec3(1.0, 1.0, 0.0), vec2(0.0, 1.0)),
+                vert(self.position + vec3(1.0, 1.0, 1.0), vec2(1.0, 1.0)),
+                vert(self.position + vec3(0.0, 1.0, 1.0), vec2(1.0, 0.0)),
+                // front
+                vert(self.position + vec3(1.0, 1.0, 0.0), vec2(1.0, 1.0)),
+                vert(self.position + vec3(0.0, 1.0, 0.0), vec2(1.0, 0.0)),
+            ],
+            indices: vec![
+                0, 1, 2, 3, 4,
+                5, // bottom
+                  // 4, 5, 6, 4, 7, 6, // top
+                  // 0, 1, 8, 0, 9, 8, // front
+                  // 3, 2, 6, 3, 7, 6, // back
+                  // 0, 3, 7, 0, 7, 4, // left
+                  // 1, 2, 6, 1, 6, 5, // right
+            ],
+            texture: Some(self.texture.top.clone()),
+        };
+        draw_mesh(&mesh);
+    }
+}
+
+async fn load_tex() -> Vec<Texture2D> {
+    let mut textures: Vec<Texture2D> = vec![];
+
+    let stone = load_texture("assets/textures/stone.png").await.unwrap();
+    stone.set_filter(FilterMode::Nearest);
+
+    let grass = load_texture("assets/textures/grass.png").await.unwrap();
+    grass.set_filter(FilterMode::Nearest);
+
+    textures.push(stone);
+    textures.push(grass);
+
+    textures
+}
+
 #[macroquad::main(conf)]
 async fn main() {
+    let textures = load_tex().await;
+
+    let blocks = (0..8)
+        .map(|x| {
+            (0..8).map({
+                let value = textures.clone();
+                move |z| {
+                    Block::new(
+                        BlockType::Stone,
+                        vec3(x as f32, 0.0, z as f32),
+                        value[0].clone(),
+                    )
+                }
+            })
+        })
+        .flatten()
+        .collect::<Vec<_>>();
+
     let mut x = 0.0;
     let mut switch = false;
     let bounds = 8.0;
@@ -112,15 +235,12 @@ async fn main() {
 
         draw_grid(20, 1., BLACK, GRAY);
 
-        draw_line_3d(
-            vec3(x, 0.0, x),
-            vec3(5.0, 5.0, 5.0),
-            Color::new(1.0, 1.0, 0.0, 1.0),
-        );
-
-        draw_cube_wires(vec3(0., 1., -6.), vec3(2., 2., 2.), GREEN);
-        draw_cube_wires(vec3(0., 1., 6.), vec3(2., 2., 2.), BLUE);
-        draw_cube_wires(vec3(2., 1., 2.), vec3(2., 2., 2.), RED);
+        for b in &blocks {
+            b.make_mesh();
+        }
+        // for b in &blocks {
+        //     // b.draw();
+        // }
 
         // Back to screen space, render some text
 
