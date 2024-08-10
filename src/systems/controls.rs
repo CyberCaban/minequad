@@ -51,7 +51,7 @@ impl Player {
         if is_key_down(KeyCode::LeftShift) {
             velocity -= world_up;
         }
-        self.position += velocity.normalize_or(vec3(0.0, 0.0, 0.0)) * MOVE_SPEED;
+        self.position += velocity.normalize_or(vec3(0.0, 0.0, 0.0)) * MOVE_SPEED * get_frame_time() * 100.0;
     }
     fn update_look(&mut self) {
         if !self.grabbed {return;}
