@@ -1,9 +1,10 @@
+mod systems;
+
+use std::vec;
+
 use macroquad::{models::Vertex, prelude::*};
-// use glam::vec3;
 
-const MOVE_SPEED: f32 = 0.1;
-const LOOK_SPEED: f32 = 0.1;
-
+use crate::systems::controls::*;
 fn conf() -> Conf {
     Conf {
         window_title: String::from("Minequad"),
@@ -84,19 +85,45 @@ impl Block {
                 vert(self.position + vec3(0.0, 1.0, 0.0), vec2(0.0, 0.0)),
                 vert(self.position + vec3(1.0, 1.0, 0.0), vec2(0.0, 1.0)),
                 vert(self.position + vec3(1.0, 1.0, 1.0), vec2(1.0, 1.0)),
+                vert(self.position + vec3(0.0, 1.0, 0.0), vec2(0.0, 0.0)),
                 vert(self.position + vec3(0.0, 1.0, 1.0), vec2(1.0, 0.0)),
+                vert(self.position + vec3(1.0, 1.0, 1.0), vec2(1.0, 1.0)),
                 // front
+                vert(self.position + vec3(0.0, 0.0, 0.0), vec2(0.0, 0.0)),
+                vert(self.position + vec3(1.0, 0.0, 0.0), vec2(0.0, 1.0)),
                 vert(self.position + vec3(1.0, 1.0, 0.0), vec2(1.0, 1.0)),
+                vert(self.position + vec3(0.0, 0.0, 0.0), vec2(0.0, 0.0)),
                 vert(self.position + vec3(0.0, 1.0, 0.0), vec2(1.0, 0.0)),
+                vert(self.position + vec3(1.0, 1.0, 0.0), vec2(1.0, 1.0)),
+                // back
+                vert(self.position + vec3(0.0, 0.0, 1.0), vec2(0.0, 0.0)),
+                vert(self.position + vec3(1.0, 0.0, 1.0), vec2(0.0, 1.0)),
+                vert(self.position + vec3(1.0, 1.0, 1.0), vec2(1.0, 1.0)),
+                vert(self.position + vec3(0.0, 0.0, 1.0), vec2(0.0, 0.0)),
+                vert(self.position + vec3(0.0, 1.0, 1.0), vec2(1.0, 0.0)),
+                vert(self.position + vec3(1.0, 1.0, 1.0), vec2(1.0, 1.0)),
+                // left
+                vert(self.position + vec3(0.0, 0.0, 0.0), vec2(0.0, 0.0)),
+                vert(self.position + vec3(0.0, 0.0, 1.0), vec2(0.0, 1.0)),
+                vert(self.position + vec3(0.0, 1.0, 1.0), vec2(1.0, 1.0)),
+                vert(self.position + vec3(0.0, 0.0, 0.0), vec2(0.0, 0.0)),
+                vert(self.position + vec3(0.0, 1.0, 0.0), vec2(1.0, 0.0)),
+                vert(self.position + vec3(0.0, 1.0, 1.0), vec2(1.0, 1.0)),
+                // right
+                vert(self.position + vec3(1.0, 0.0, 0.0), vec2(0.0, 0.0)),
+                vert(self.position + vec3(1.0, 0.0, 1.0), vec2(0.0, 1.0)),
+                vert(self.position + vec3(1.0, 1.0, 1.0), vec2(1.0, 1.0)),
+                vert(self.position + vec3(1.0, 0.0, 0.0), vec2(0.0, 0.0)),
+                vert(self.position + vec3(1.0, 1.0, 0.0), vec2(1.0, 0.0)),
+                vert(self.position + vec3(1.0, 1.0, 1.0), vec2(1.0, 1.0)),
             ],
             indices: vec![
-                0, 1, 2, 3, 4,
-                5, // bottom
-                  // 4, 5, 6, 4, 7, 6, // top
-                  // 0, 1, 8, 0, 9, 8, // front
-                  // 3, 2, 6, 3, 7, 6, // back
-                  // 0, 3, 7, 0, 7, 4, // left
-                  // 1, 2, 6, 1, 6, 5, // right
+                0, 1, 2, 3, 4, 5, // bottom
+                6, 7, 8, 9, 10, 11, // top
+                12, 13, 14, 15, 16, 17, // front
+                18, 19, 20, 21, 22, 23, // back
+                24, 25, 26, 27, 28, 29, // left
+                30, 31, 32, 33, 34, 35, // right
             ],
             texture: Some(self.texture.top.clone()),
         };
@@ -122,6 +149,8 @@ async fn load_tex() -> Vec<Texture2D> {
 #[macroquad::main(conf)]
 async fn main() {
     let textures = load_tex().await;
+    let atlas = load_texture("assets/textures/atlas.png").await.unwrap();
+    atlas.set_filter(FilterMode::Nearest);
 
     let blocks = (0..8)
         .map(|x| {
@@ -139,101 +168,17 @@ async fn main() {
         .flatten()
         .collect::<Vec<_>>();
 
-    let mut x = 0.0;
-    let mut switch = false;
-    let bounds = 8.0;
-
-    let world_up = vec3(0.0, 1.0, 0.0);
-    let mut yaw: f32 = 1.18;
-    let mut pitch: f32 = 0.0;
-
-    let mut front = vec3(
-        yaw.cos() * pitch.cos(),
-        pitch.sin(),
-        yaw.sin() * pitch.cos(),
-    )
-    .normalize();
-    let mut right = front.cross(world_up).normalize();
-    let mut up = right.cross(front).normalize();
-
-    let mut position = vec3(0.0, 1.0, 0.0);
-    let mut last_mouse_position: Vec2 = mouse_position().into();
-
-    let mut grabbed = false;
-    set_cursor_grab(grabbed);
-    show_mouse(true);
-
+    let mut player = Player::new();
     loop {
-        let delta = get_frame_time();
-
+        player.update();
         if is_key_pressed(KeyCode::Escape) {
             break;
-        }
-        if is_key_pressed(KeyCode::Tab) {
-            grabbed = !grabbed;
-            set_cursor_grab(grabbed);
-            show_mouse(!grabbed);
-        }
-        let mut velocity = vec3(0.0, 0.0, 0.0);
-        if is_key_down(KeyCode::W) {
-            velocity += vec3(yaw.cos(), 0.0, yaw.sin());
-        }
-        if is_key_down(KeyCode::S) {
-            velocity -= vec3(yaw.cos(), 0.0, yaw.sin());
-        }
-        if is_key_down(KeyCode::A) {
-            velocity -= right;
-        }
-        if is_key_down(KeyCode::D) {
-            velocity += right;
-        }
-        position += velocity * MOVE_SPEED;
-        if is_key_down(KeyCode::Space) {
-            position += world_up * 0.03;
-        }
-        if is_key_down(KeyCode::LeftShift) {
-            position -= world_up * 0.03;
-        }
-
-        let mouse_position: Vec2 = mouse_position().into();
-        let mouse_delta = mouse_position - last_mouse_position;
-        last_mouse_position = mouse_position;
-
-        if grabbed {
-            yaw += mouse_delta.x * delta * LOOK_SPEED;
-            pitch += mouse_delta.y * delta * -LOOK_SPEED;
-
-            pitch = if pitch > 1.5 { 1.5 } else { pitch };
-            pitch = if pitch < -1.5 { -1.5 } else { pitch };
-
-            front = vec3(
-                yaw.cos() * pitch.cos(),
-                pitch.sin(),
-                yaw.sin() * pitch.cos(),
-            )
-            .normalize();
-
-            right = front.cross(world_up).normalize();
-            up = right.cross(front).normalize();
-
-            x += if switch { 0.04 } else { -0.04 };
-            if x >= bounds || x <= -bounds {
-                switch = !switch;
-            }
         }
 
         clear_background(LIGHTGRAY);
 
         // Going 3d!
-
-        set_camera(&Camera3D {
-            position: position,
-            up: up,
-            target: position + front,
-            ..Default::default()
-        });
-
-        draw_grid(20, 1., BLACK, GRAY);
+        draw_grid(100, 1., BLACK, GRAY);
 
         for b in &blocks {
             b.make_mesh();
@@ -257,7 +202,7 @@ async fn main() {
         draw_text(
             format!(
                 "X: {:.2} Y: {:.2} Z: {:.2}",
-                position.x, position.y, position.z
+                player.position.x, player.position.y, player.position.z
             )
             .as_str(),
             10.0,
@@ -266,7 +211,7 @@ async fn main() {
             BLACK,
         );
         draw_text(
-            format!("Press <TAB> to toggle mouse grab: {}", grabbed).as_str(),
+            format!("Press <TAB> to toggle mouse grab: {}", player.grabbed).as_str(),
             10.0,
             48.0 + 42.0,
             30.0,
@@ -275,8 +220,8 @@ async fn main() {
         draw_text(
             format!(
                 "Yaw: {:.2} Pitch: {:.2}",
-                yaw.to_degrees(),
-                pitch.to_degrees(),
+                player.yaw.to_degrees(),
+                player.pitch.to_degrees(),
             )
             .as_str(),
             10.0,
