@@ -1,5 +1,12 @@
 use macroquad::{
-    camera::{set_camera, Camera3D}, input::{is_key_down, is_key_pressed, is_key_released, mouse_position, set_cursor_grab, show_mouse, KeyCode}, math::{vec3, Vec2, Vec3}, time::get_frame_time
+    camera::{set_camera, Camera3D},
+    input::{
+        is_key_down, is_key_pressed, is_key_released, mouse_position, set_cursor_grab, show_mouse,
+        KeyCode,
+    },
+    math::{vec3, Vec2, Vec3},
+    time::get_frame_time,
+    window::{screen_height, screen_width},
 };
 
 const MOVE_SPEED: f32 = 0.1;
@@ -32,7 +39,7 @@ impl Player {
         let front_velocity = vec3(self.yaw.cos(), 0.0, self.yaw.sin());
         let left_velocity = vec3(self.yaw.sin(), 0.0, -self.yaw.cos());
         let mut velocity = vec3(0.0, 0.0, 0.0);
-        
+
         if is_key_down(KeyCode::W) {
             velocity += front_velocity;
         }
@@ -51,10 +58,13 @@ impl Player {
         if is_key_down(KeyCode::LeftShift) {
             velocity -= world_up;
         }
-        self.position += velocity.normalize_or(vec3(0.0, 0.0, 0.0)) * MOVE_SPEED * get_frame_time() * 100.0;
+        self.position +=
+            velocity.normalize_or(vec3(0.0, 0.0, 0.0)) * MOVE_SPEED * get_frame_time() * 100.0;
     }
     fn update_look(&mut self) {
-        if !self.grabbed {return;}
+        if !self.grabbed {
+            return;
+        }
         let delta = get_frame_time();
         let mouse_position: Vec2 = mouse_position().into();
         let mouse_delta = mouse_position - self.last_mouse_position;
@@ -99,6 +109,8 @@ impl Player {
             position: self.position,
             up,
             target,
+            fovy: 45.0, // min: 38.0 max: 47.0
+            aspect: Some(screen_width() / screen_height()),
             ..Default::default()
         });
     }
