@@ -1,8 +1,14 @@
-use crate::systems::chunks::BlockMesh;
+use crate::systems::blocks::BlockMesh;
 use macroquad::prelude::*;
 
-use super::chunks::vert;
-
+fn vert(pos: Vec3, uv: Vec2) -> Vertex {
+    Vertex {
+        position: pos,
+        uv,
+        color: WHITE.into(),
+        normal: vec4(0.0, 1.0, 0.0, 0.0),
+    }
+}
 pub fn mesh_top(mesh: &mut BlockMesh, pos: Vec3, texture: Texture2D) {
     mesh.vertices
         .push(vert(pos + vec3(0.0, 1.0, 0.0), vec2(1.0, 1.0)));
