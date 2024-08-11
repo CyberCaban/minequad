@@ -15,10 +15,10 @@ pub struct DemoFeatures {
 }
 
 impl DemoFeatures {
-    pub fn new(texture: Texture2D) -> Self {
+    pub fn new(texture: &Texture2D) -> Self {
         Self {
             block_demo: PartialBlockRender {
-                block: Block::new(BlockType::Stone, vec3(-5.0, 0.0, -5.0), texture.clone()),
+                block: Block::new(BlockType::Stone, vec3(-5.0, 0.0, -5.0), &texture),
                 sides: RenderSides::default(),
                 draw_sides: [false; 6],
             },

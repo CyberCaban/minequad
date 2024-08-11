@@ -103,30 +103,20 @@ pub struct Block {
 }
 
 impl Block {
-    pub fn new(block_type: BlockType, position: Vec3, texture: Texture2D) -> Self {
+    pub fn new(block_type: BlockType, position: Vec3, texture: &Texture2D) -> Self {
         // assert that position is integer
         // debug_assert!(
         //     position.x.floor() == position.x.ceil()
         //         && position.y.floor() == position.y.ceil()
         //         && position.z.floor() == position.z.ceil()
         // );
-        let texture = match block_type {
-            BlockType::Stone => BlockTexture {
-                top: texture.clone(),
-                bottom: texture.clone(),
-                front: texture.clone(),
-                back: texture.clone(),
-                left: texture.clone(),
-                right: texture.clone(),
-            },
-            BlockType::Grass => BlockTexture {
-                top: texture.clone(),
-                bottom: texture.clone(),
-                front: texture.clone(),
-                back: texture.clone(),
-                left: texture.clone(),
-                right: texture.clone(),
-            },
+        let texture = BlockTexture {
+            top: texture.clone(),
+            bottom: texture.clone(),
+            front: texture.clone(),
+            back: texture.clone(),
+            left: texture.clone(),
+            right: texture.clone(),
         };
 
         Self {

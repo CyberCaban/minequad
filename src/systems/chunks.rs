@@ -25,7 +25,7 @@ impl Chunk {
                 let mut row = Vec::new();
                 for z in 0..CHUNK_SIZE_16 {
                     let block_pos = vec3(x as f32, y as f32, z as f32);
-                    let block = Block::new(BlockType::Stone, block_pos, Texture2D::empty());
+                    let block = Block::new(BlockType::Stone, block_pos, &Texture2D::empty());
                     row.push(Some(block));
                 }
                 layer.push(row);
