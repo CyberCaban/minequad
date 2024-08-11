@@ -1,5 +1,5 @@
 use macroquad::{
-    camera::{set_camera, Camera3D},
+    camera::{set_camera, Camera3D, Projection},
     input::{
         is_key_down, is_key_pressed, is_key_released, mouse_position, set_cursor_grab, show_mouse,
         KeyCode,
@@ -19,6 +19,8 @@ pub struct Player {
     pub pitch: f32,
     pub grabbed: bool,
     last_mouse_position: Vec2,
+    pub fovy: f32,
+    pub projection: Projection,
 }
 
 impl Player {
@@ -31,6 +33,8 @@ impl Player {
             pitch: 0.0,
             grabbed: false,
             last_mouse_position: mouse_position().into(),
+            fovy: 45.0,
+            projection: Projection::Perspective,
         }
     }
 
@@ -114,7 +118,8 @@ impl Player {
             position: self.position,
             up,
             target,
-            fovy: 45.0, // min: 38.0 max: 47.0
+            fovy: self.fovy, // min: 38.0 max: 47.0
+            projection: self.projection,
             aspect: Some(screen_width() / screen_height()),
             ..Default::default()
         });
