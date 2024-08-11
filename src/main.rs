@@ -1,13 +1,13 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod systems;
 
-use std::{fs, vec};
+use std::vec;
 
-use macroquad::{models::Vertex, prelude::*};
-use systems::{
-    chunks::{Block, BlockType},
-    devInfo::dev_info_system,
+use macroquad::{
+    prelude::*,
+    ui::{hash, root_ui, widgets},
 };
+use systems::chunks::{Block, BlockSides, BlockType, RenderSides};
 
 use crate::systems::controls::*;
 
@@ -68,32 +68,98 @@ async fn main() {
     }
 
     let mut player = Player::new();
+
+    let mut draw_sides: Vec<bool> = vec![false; 6];
+    let mut sides: RenderSides = RenderSides::default();
+    let mut test_block = Block::new(BlockType::Stone, vec3(-2.0, 0.0, -3.0), textures[0].clone());
+
     loop {
         clear_background(WHITE);
         player.update();
 
-        for x in 0..CHUNK_SIZE_16 {
-            for y in 0..arr[1].len() {
-                for z in 0..CHUNK_SIZE_16 {
-                    arr[x as usize][y as usize][z as usize].make_mesh();
-                }
-            }
-        }
+        // for x in 0..CHUNK_SIZE_16 {
+        //     for y in 0..arr[1].len() {
+        //         for z in 0..CHUNK_SIZE_16 {
+        //             arr[x as usize][y as usize][z as usize].render_mesh();
+        //         }
+        //     }
+        // }
 
+        
+        
+        draw_cube(vec3(-4.5, 0.5, -2.5), vec3(1.0, 1.0, 1.0), Some(&textures[0].clone()), WHITE);
+        
         // Going 3d!
         draw_grid(100, 1., BLACK, GRAY);
-        // draw_cube(vec3(0.0, 6.0, 0.0), vec3(10.0, 10.0, 10.0), Some(&textures[1].clone()), WHITE);
-
+        
         // Back to screen space, render some text
-
+        
+        test_block.make_mesh(&sides);
+        test_block.construct_mesh();
+        if draw_sides[0] {
+            sides.top = Some(&BlockSides::Top);
+        } else {
+            sides.top = None;
+        } 
+        if draw_sides[1] {
+            sides.bottom = Some(&BlockSides::Bottom);
+        } else {
+            sides.bottom = None;
+        }
+        if draw_sides[2] {
+            sides.front = Some(&BlockSides::Front);
+        } else {
+            sides.front = None;
+        }
+        if draw_sides[3] {
+            sides.back = Some(&BlockSides::Back);
+        } else {
+            sides.back = None;
+        }
+        if draw_sides[4] {
+            sides.left = Some(&BlockSides::Left);
+        } else {
+            sides.left = None;
+        }
+        if draw_sides[5] {
+            sides.right = Some(&BlockSides::Right);
+        } else {
+            sides.right = None;
+        }
         set_default_camera();
-
-        dev_info_system(&player);
+        
         if is_key_pressed(KeyCode::Escape) {
             break;
         }
 
-        
+        root_ui().group(
+            hash!(),
+            vec2(screen_width() / 4.0, screen_height() / 4.0),
+            |ui| {
+                ui.checkbox(hash!(), "Render top", &mut draw_sides[0]);
+                ui.checkbox(hash!(), "Render bottom", &mut draw_sides[1]);
+                ui.checkbox(hash!(), "Render front", &mut draw_sides[2]);
+                ui.checkbox(hash!(), "Render back", &mut draw_sides[3]);
+                ui.checkbox(hash!(), "Render left", &mut draw_sides[4]);
+                ui.checkbox(hash!(), "Render right", &mut draw_sides[5]);
+
+                ui.label(None, "Hello, world!");
+                ui.label(None, format!("FPS: {}", get_fps()).as_str());
+                ui.label(
+                    None,
+                    format!(
+                        "X: {:.2} Y: {:.2} Z: {:.2}",
+                        player.position.x, player.position.y, player.position.z
+                    )
+                    .as_str(),
+                );
+                ui.label(
+                    None,
+                    format!("Yaw: {:.2} Pitch: {:.2}", player.yaw, player.pitch).as_str(),
+                );
+            },
+        );
+
         next_frame().await
     }
 }

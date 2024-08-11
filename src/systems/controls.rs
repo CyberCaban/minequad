@@ -10,7 +10,7 @@ use macroquad::{
 };
 
 const MOVE_SPEED: f32 = 0.1;
-const LOOK_SPEED: f32 = 0.1;
+const LOOK_SPEED: f32 = 0.09;
 const FLY_SPEED: f32 = 0.06;
 
 pub struct Player {
@@ -58,34 +58,39 @@ impl Player {
         if is_key_down(KeyCode::LeftShift) {
             velocity -= world_up;
         }
-        self.position +=
-            velocity.normalize_or(vec3(0.0, 0.0, 0.0)) * MOVE_SPEED * get_frame_time() * 100.0;
+        if velocity.x + velocity.y + velocity.z == 0.0 {
+            velocity = vec3(0.0, 0.0, 0.0);
+        } else {
+            velocity = velocity.normalize();
+        }
+        self.position += velocity * MOVE_SPEED * get_frame_time() * 100.0;
     }
     fn update_look(&mut self) {
-        if !self.grabbed {
-            return;
-        }
-        let delta = get_frame_time();
-        let mouse_position: Vec2 = mouse_position().into();
-        let mouse_delta = mouse_position - self.last_mouse_position;
-        self.last_mouse_position = mouse_position;
-        self.yaw += mouse_delta.x * delta * LOOK_SPEED;
-        self.pitch += mouse_delta.y * delta * -LOOK_SPEED;
-        self.pitch = if self.pitch > 1.5 { 1.5 } else { self.pitch };
-        self.pitch = if self.pitch < -1.5 { -1.5 } else { self.pitch };
-    }
-    fn update_mouse_grab(&mut self) {
-        if is_key_pressed(KeyCode::Tab) {
-            self.grabbed = !self.grabbed;
-            set_cursor_grab(self.grabbed);
-            show_mouse(!self.grabbed);
-        }
         if is_key_down(KeyCode::LeftAlt) {
             show_mouse(true);
         }
         if is_key_released(KeyCode::LeftAlt) {
             show_mouse(false);
         }
+        if is_key_pressed(KeyCode::Tab) {
+            self.grabbed = !self.grabbed;
+            set_cursor_grab(self.grabbed);
+            show_mouse(!self.grabbed);
+        }
+        let delta = get_frame_time();
+        let mouse_position: Vec2 = mouse_position().into();
+        let mouse_delta = mouse_position - self.last_mouse_position;
+        self.last_mouse_position = mouse_position;
+        if !self.grabbed {
+            return;
+        }
+
+        self.yaw += mouse_delta.x * delta * LOOK_SPEED;
+        self.pitch += mouse_delta.y * delta * -LOOK_SPEED;
+        self.pitch = if self.pitch > 1.5 { 1.5 } else { self.pitch };
+        self.pitch = if self.pitch < -1.5 { -1.5 } else { self.pitch };
+    }
+    fn update_mouse_grab(&mut self) {
     }
     fn get_camera_orientation(&self) -> (Vec3, Vec3) {
         let world_up = vec3(0.0, 1.0, 0.0);
