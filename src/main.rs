@@ -12,6 +12,7 @@ use macroquad::{
 };
 use systems::{
     blocks::{Block, BlockType, RenderSides},
+    chunks::Chunk,
     demo_features::DemoFeatures,
 };
 
@@ -57,36 +58,6 @@ async fn main() {
     grass_tex.set_filter(FilterMode::Nearest);
     println!("Textures: {:?}", stone_tex);
 
-    let mut arr = Vec::new();
-    for y in 0..CHUNK_SIZE_16 {
-        let mut layer = Vec::new();
-        for x in 0..3 {
-            let mut row = Vec::new();
-            for z in 0..CHUNK_SIZE_16 {
-                let block_pos = vec3(x as f32, y as f32, z as f32);
-                let block_type =
-                    if x == 0 || z == 0 || x == CHUNK_SIZE_16 - 1 || z == CHUNK_SIZE_16 - 1 {
-                        BlockType::Stone
-                    } else {
-                        BlockType::Grass
-                    };
-                // let block_tex = &textures[match block_type {
-                //     BlockType::Stone => 0,
-                //     BlockType::Grass => 1,
-                // }];
-                let block_tex = match block_type {
-                    BlockType::Stone => &stone_tex,
-                    BlockType::Grass => &grass_tex,
-                };
-                let mut block = Block::new(block_type, block_pos, block_tex);
-                block.make_mesh(&RenderSides::all());
-                row.push(block);
-            }
-            layer.push(row);
-        }
-        arr.push(layer);
-    }
-
     let mut demo = DemoFeatures::new(&stone_tex);
     let mut player = Player::new();
     let mut projection = 0;
@@ -96,6 +67,11 @@ async fn main() {
         b: 250.0 / 255.0,
         a: 1.0,
     };
+    let mut chunk = Chunk::new((0.0, 0.0, 0.0));
+    chunk.from_fn(&stone_tex, |x, y, z| {
+        (x as f32).sin() * (y as f32).sin() * (z as f32).sin() > 0.0
+    });
+    chunk.connected_blocks();
 
     loop {
         clear_background(LIGHTBLUE);
@@ -117,13 +93,7 @@ async fn main() {
             WHITE,
         );
 
-        for x in 0..CHUNK_SIZE_16 {
-            for y in 0..arr[1].len() {
-                for z in 0..CHUNK_SIZE_16 {
-                    arr[x as usize][y as usize][z as usize].render_mesh();
-                }
-            }
-        }
+        chunk.render();
         demo.render();
 
         root_ui().group(
