@@ -12,7 +12,8 @@ use macroquad::{
 };
 use systems::{
     blocks::{Block, BlockType, RenderSides},
-    chunks::Chunk,
+    chunk::Chunk,
+    chunk_renderer::Renderer,
     demo_features::DemoFeatures,
 };
 
@@ -48,6 +49,7 @@ async fn load_tex() -> Vec<Rc<Texture2D>> {
 
 static STONE: &[u8] = include_bytes!("../assets/textures/stone.png");
 static GRASS: &[u8] = include_bytes!("../assets/textures/grass.png");
+static ATLAS: &[u8] = include_bytes!("../assets/textures/atlas.png");
 
 #[macroquad::main(conf)]
 async fn main() {
@@ -56,6 +58,8 @@ async fn main() {
     stone_tex.set_filter(FilterMode::Nearest);
     let grass_tex = Texture2D::from_file_with_format(GRASS, Some(ImageFormat::Png));
     grass_tex.set_filter(FilterMode::Nearest);
+    let atlas_tex = Texture2D::from_file_with_format(ATLAS, Some(ImageFormat::Png));
+    atlas_tex.set_filter(FilterMode::Nearest);
 
     // let mut demo = DemoFeatures::new(&stone_tex);
     let mut player = Player::new();
@@ -66,11 +70,12 @@ async fn main() {
         b: 250.0 / 255.0,
         a: 1.0,
     };
-    let mut chunk = Chunk::new((1.0, 0.0, 0.0));
-    chunk.from_fn(&stone_tex, |x, y, z| {
-        ((x as f32).cos() + (y as f32).tan() * (z as f32).sin()).sin() > 0.0
-    });
-    chunk.connected_blocks();
+    let mut chunk = Chunk::populate();
+    let mut renderer = Renderer::new(1024 * 1024 * 8);
+    // chunk.from_fn(&stone_tex, |x, y, z| {
+    //     ((x as f32).cos() + (y as f32).tan() * (z as f32).sin()).sin() > 0.0
+    // });
+    // chunk.connected_blocks();
 
     loop {
         clear_background(LIGHTBLUE);
@@ -92,7 +97,8 @@ async fn main() {
             WHITE,
         );
 
-        chunk.render();
+        renderer.render(&chunk, &atlas_tex);
+        // chunk.render();
         // demo.render();
 
         ui::root_ui().group(
@@ -107,18 +113,18 @@ async fn main() {
                     &mut projection,
                 );
                 ui.label(None, format!("FPS: {}", get_fps()).as_str());
-                        ui.label(
-                            None,
-                            format!(
-                                "X: {:.2} Y: {:.2} Z: {:.2}",
-                                player.position.x, player.position.y, player.position.z
-                            )
-                            .as_str(),
-                        );
-                        ui.label(
-                            None,
-                            format!("Yaw: {:.2} Pitch: {:.2}", player.yaw, player.pitch).as_str(),
-                        );
+                ui.label(
+                    None,
+                    format!(
+                        "X: {:.2} Y: {:.2} Z: {:.2}",
+                        player.position.x, player.position.y, player.position.z
+                    )
+                    .as_str(),
+                );
+                ui.label(
+                    None,
+                    format!("Yaw: {:.2} Pitch: {:.2}", player.yaw, player.pitch).as_str(),
+                );
             },
         );
 
