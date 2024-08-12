@@ -6,7 +6,7 @@ use std::{rc::Rc, vec};
 use macroquad::{
     prelude::*,
     ui::{
-        hash, root_ui,
+        self, hash,
         widgets::{self, Texture},
     },
 };
@@ -56,9 +56,8 @@ async fn main() {
     stone_tex.set_filter(FilterMode::Nearest);
     let grass_tex = Texture2D::from_file_with_format(GRASS, Some(ImageFormat::Png));
     grass_tex.set_filter(FilterMode::Nearest);
-    println!("Textures: {:?}", stone_tex);
 
-    let mut demo = DemoFeatures::new(&stone_tex);
+    // let mut demo = DemoFeatures::new(&stone_tex);
     let mut player = Player::new();
     let mut projection = 0;
     let LIGHTBLUE = Color {
@@ -67,9 +66,9 @@ async fn main() {
         b: 250.0 / 255.0,
         a: 1.0,
     };
-    let mut chunk = Chunk::new((0.0, 0.0, 0.0));
+    let mut chunk = Chunk::new((1.0, 0.0, 0.0));
     chunk.from_fn(&stone_tex, |x, y, z| {
-        (x as f32).sin() * (y as f32).sin() * (z as f32).sin() > 0.0
+        ((x as f32).cos() + (y as f32).tan() * (z as f32).sin()).sin() > 0.0
     });
     chunk.connected_blocks();
 
@@ -94,9 +93,9 @@ async fn main() {
         );
 
         chunk.render();
-        demo.render();
+        // demo.render();
 
-        root_ui().group(
+        ui::root_ui().group(
             hash!(),
             vec2(screen_width() / 4.0, screen_height() / 4.0),
             |ui| {
@@ -108,25 +107,25 @@ async fn main() {
                     &mut projection,
                 );
                 ui.label(None, format!("FPS: {}", get_fps()).as_str());
-                ui.label(
-                    None,
-                    format!(
-                        "X: {:.2} Y: {:.2} Z: {:.2}",
-                        player.position.x, player.position.y, player.position.z
-                    )
-                    .as_str(),
-                );
-                ui.label(
-                    None,
-                    format!("Yaw: {:.2} Pitch: {:.2}", player.yaw, player.pitch).as_str(),
-                );
+                        ui.label(
+                            None,
+                            format!(
+                                "X: {:.2} Y: {:.2} Z: {:.2}",
+                                player.position.x, player.position.y, player.position.z
+                            )
+                            .as_str(),
+                        );
+                        ui.label(
+                            None,
+                            format!("Yaw: {:.2} Pitch: {:.2}", player.yaw, player.pitch).as_str(),
+                        );
             },
         );
 
-        set_default_camera();
         if is_key_pressed(KeyCode::Escape) {
             break;
         }
+        set_default_camera();
         next_frame().await
     }
 }
