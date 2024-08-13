@@ -72,10 +72,7 @@ async fn main() {
     };
     let mut chunk = Chunk::populate();
     let mut renderer = Renderer::new(1024 * 1024 * 8);
-    // chunk.from_fn(&stone_tex, |x, y, z| {
-    //     ((x as f32).cos() + (y as f32).tan() * (z as f32).sin()).sin() > 0.0
-    // });
-    // chunk.connected_blocks();
+    let mesh = renderer.render(&chunk, &atlas_tex);
 
     loop {
         clear_background(LIGHTBLUE);
@@ -93,13 +90,11 @@ async fn main() {
         draw_cube(
             vec3(-4.5, 0.5, -2.5),
             vec3(1.0, 1.0, 1.0),
-            Some(&stone_tex),
+            Some(&atlas_tex),
             WHITE,
         );
 
-        renderer.render(&chunk, &atlas_tex);
-        // chunk.render();
-        // demo.render();
+        draw_mesh(&mesh);
 
         ui::root_ui().group(
             hash!(),

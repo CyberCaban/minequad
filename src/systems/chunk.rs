@@ -19,33 +19,39 @@ pub struct Block {
 }
 
 pub struct Chunk {
-    pub blocks: Vec<Block>,
+    pub blocks: [[[Block; CHUNK_SIZE_W as usize]; CHUNK_SIZE_H as usize]; CHUNK_SIZE_D as usize],
     pub position: (i32, i32, i32),
 }
 
 impl Chunk {
     pub fn new(position: (i32, i32, i32)) -> Self {
         Self {
-            blocks: vec![Block { id: BlockId::Air }; CHUNK_VOLUME as usize],
+            blocks: [[[Block { id: BlockId::Air }; CHUNK_SIZE_W as usize]; CHUNK_SIZE_H as usize];
+                CHUNK_SIZE_D as usize],
             position,
         }
     }
     pub fn populate() -> Self {
-        let mut arr = Vec::with_capacity(CHUNK_VOLUME.try_into().unwrap());
-
+        let mut arr = [[[Block { id: BlockId::Air }; CHUNK_SIZE_W as usize]; CHUNK_SIZE_H as usize];
+            CHUNK_SIZE_D as usize];
         for y in 0..CHUNK_SIZE_H {
+            let mut layer =
+                [[Block { id: BlockId::Air }; CHUNK_SIZE_W as usize]; CHUNK_SIZE_H as usize];
             for z in 0..CHUNK_SIZE_D {
+                let mut row = [Block { id: BlockId::Air }; CHUNK_SIZE_W as usize];
                 for x in 0..CHUNK_SIZE_W {
-                    let not_air = y <= (((x as f32 * 0.3).sin() * 0.5 + 0.5) * 10.0) as i32;
+                    let not_air = y <= (((x as f32 * 0.3).sin() * 0.5 + 0.5) * 10.0) as usize;
                     let id = if not_air {
                         BlockId::Stone
                     } else {
                         BlockId::Air
                     };
                     // arr[((y * CHUNK_SIZE_D + z) * CHUNK_SIZE_W + (x)) as usize] = Block { id };
-                    arr.push(Block { id });
+                    row[x as usize] = Block { id };
                 }
+                layer[z as usize] = row;
             }
+            arr[y as usize] = layer;
         }
 
         Self {
