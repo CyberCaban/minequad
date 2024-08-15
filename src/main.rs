@@ -12,7 +12,7 @@ use macroquad::{
 };
 use systems::{
     blocks::{Block, BlockType, RenderSides},
-    chunks::Chunk,
+    chunk::{Chunk, ChunkRenderer},
     demo_features::DemoFeatures,
 };
 
@@ -66,12 +66,20 @@ async fn main() {
         b: 250.0 / 255.0,
         a: 1.0,
     };
-    let mut chunk = Chunk::new((1.0, 0.0, 0.0));
-    chunk.from_fn(&stone_tex, |x, y, z| {
-        ((x as f32).cos() + (y as f32).tan() * (z as f32).sin()).sin() > 0.0
-    });
-    chunk.connected_blocks();
+    let mut chunk = Chunk::new();
+    chunk.populate((1.0, 0.0, 0.0));
 
+    let mut renderer = ChunkRenderer {
+        mesh: Mesh {
+            vertices: vec![],
+            indices: vec![],
+            texture: None,
+        },
+    };
+
+    renderer.gen_mesh(&chunk, &stone_tex);
+
+    
     loop {
         clear_background(LIGHTBLUE);
         if projection == 0 {
@@ -92,7 +100,7 @@ async fn main() {
             WHITE,
         );
 
-        chunk.render();
+        renderer.render_mesh();
         // demo.render();
 
         ui::root_ui().group(
@@ -107,18 +115,18 @@ async fn main() {
                     &mut projection,
                 );
                 ui.label(None, format!("FPS: {}", get_fps()).as_str());
-                        ui.label(
-                            None,
-                            format!(
-                                "X: {:.2} Y: {:.2} Z: {:.2}",
-                                player.position.x, player.position.y, player.position.z
-                            )
-                            .as_str(),
-                        );
-                        ui.label(
-                            None,
-                            format!("Yaw: {:.2} Pitch: {:.2}", player.yaw, player.pitch).as_str(),
-                        );
+                ui.label(
+                    None,
+                    format!(
+                        "X: {:.2} Y: {:.2} Z: {:.2}",
+                        player.position.x, player.position.y, player.position.z
+                    )
+                    .as_str(),
+                );
+                ui.label(
+                    None,
+                    format!("Yaw: {:.2} Pitch: {:.2}", player.yaw, player.pitch).as_str(),
+                );
             },
         );
 

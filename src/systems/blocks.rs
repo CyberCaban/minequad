@@ -1,6 +1,7 @@
 use core::fmt;
 
-use macroquad::prelude::*;
+
+use macroquad::{math::Vec3, models::{draw_mesh, Mesh, Vertex}, texture::Texture2D};
 
 use super::render_utils::{mesh_back, mesh_bottom, mesh_front, mesh_left, mesh_right, mesh_top};
 

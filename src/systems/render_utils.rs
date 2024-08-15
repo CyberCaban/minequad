@@ -1,12 +1,12 @@
+use macroquad::{color::WHITE, math::{vec2, vec3, Vec2, Vec3}, models::Vertex, texture::Texture2D};
+
 use crate::systems::blocks::BlockMesh;
-use macroquad::prelude::*;
 
 fn vert(pos: Vec3, uv: Vec2) -> Vertex {
     Vertex {
         position: pos,
         uv,
         color: WHITE.into(),
-        normal: vec4(0.0, 1.0, 0.0, 0.0),
     }
 }
 pub fn mesh_top(mesh: &mut BlockMesh, pos: Vec3, texture: Texture2D) {
