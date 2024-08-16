@@ -46,6 +46,7 @@ async fn load_tex() -> Vec<Rc<Texture2D>> {
 
 static STONE: &[u8] = include_bytes!("../assets/textures/stone.png");
 static GRASS: &[u8] = include_bytes!("../assets/textures/grass.png");
+static ATLAS: &[u8] = include_bytes!("../assets/textures/atlas.png");
 
 #[macroquad::main(conf)]
 async fn main() {
@@ -54,6 +55,8 @@ async fn main() {
     stone_tex.set_filter(FilterMode::Nearest);
     let grass_tex = Texture2D::from_file_with_format(GRASS, Some(ImageFormat::Png));
     grass_tex.set_filter(FilterMode::Nearest);
+    let atlas = Texture2D::from_file_with_format(ATLAS, Some(ImageFormat::Png));
+    atlas.set_filter(FilterMode::Nearest);
 
     // let mut demo = DemoFeatures::new(&stone_tex);
     let mut player = Player::new();
@@ -80,7 +83,7 @@ async fn main() {
     for x in 0..2 {
         for z in 0..2 {
             renderers.push(ChunkRenderer::new());
-            renderers[ x * 2 + z].gen_mesh(&chunks[x][z], &stone_tex);
+            renderers[ x * 2 + z].gen_mesh(&chunks[x][z], &atlas);
         }
     }
 
