@@ -5,10 +5,10 @@ use macroquad::{
     texture::Texture2D,
 };
 
-const CHUNK_W: usize = 16;
-const CHUNK_H: usize = 16;
-const CHUNK_D: usize = 16;
-const CHUCK_VOLUME: usize = CHUNK_W * CHUNK_H * CHUNK_D;
+pub const CHUNK_W: usize = 16;
+pub const CHUNK_H: usize = 16;
+pub const CHUNK_D: usize = 16;
+pub const CHUCK_VOLUME: usize = CHUNK_W * CHUNK_H * CHUNK_D;
 
 #[derive(Clone, Debug, Copy, PartialEq)]
 pub enum BlockType {
@@ -46,9 +46,8 @@ impl Chunk {
                     // } else {
                     //     BlockType::Air
                     // };
-                    let mut id = if (block_pos.0.cos() + block_pos.1.tan() * block_pos.2.sin())
-                        .sin()
-                        > 0.0
+                    let mut id = if (block_pos.0 + block_pos.2).sin() > 0.0
+                        && (block_pos.1 + block_pos.2.cos()).sin() > 0.0
                     {
                         BlockType::Stone
                     } else {
@@ -92,13 +91,13 @@ macro_rules! get_block {
 
 macro_rules! is_blocking {
     ($chunk: expr, $x: expr, $y: expr, $z: expr) => {
-        !in_chunk!($x, $y, $z) || get_block!($chunk, $x, $y, $z).id != BlockType::Air
+        in_chunk!($x, $y, $z) && get_block!($chunk, $x, $y, $z).id != BlockType::Air
     };
 }
 
 fn vert(x: f32, y: f32, z: f32, u: f32, v: f32) -> Vertex {
     Vertex {
-        position: vec3(x, y, z),
+        position: vec3(x + 0.5, y - 0.5, z + 0.5),
         uv: vec2(u, v),
         color: Color::new(1.0, 1.0, 1.0, 1.0),
     }
@@ -118,6 +117,15 @@ pub struct ChunkRenderer {
 }
 
 impl ChunkRenderer {
+    pub fn new() -> Self {
+        Self {
+            mesh: Mesh {
+                vertices: vec![],
+                indices: vec![],
+                texture: None,
+            },
+        }
+    }
     pub fn gen_mesh(&mut self, chunk: &Chunk, texture: &Texture2D) {
         let mut vertices: Vec<Vertex> = Vec::new();
         let mut idx: u16 = 0;
@@ -128,7 +136,11 @@ impl ChunkRenderer {
                 for x in 0..CHUNK_W {
                     let (x, y, z) = (x as i32, y as i32, z as i32);
                     let block = get_block!(chunk, x, y, z);
-                    let block_pos = (x as f32, y as f32, z as f32);
+                    let block_pos = (
+                        x as f32 + chunk.position.0,
+                        y as f32 + chunk.position.1,
+                        z as f32 + chunk.position.2,
+                    );
 
                     match block.id {
                         BlockType::Air => {
@@ -136,7 +148,7 @@ impl ChunkRenderer {
                         }
                         _ => {
                             if !is_blocking!(chunk, x, y + 1, z) {
-                                let (x, y, z) = (x as f32, y as f32, z as f32);
+                                let (x, y, z) = block_pos;
                                 vertices.push(vert(x - 0.5, y + 0.5, z + 0.5, 0.0, 0.0));
                                 vertices.push(vert(x + 0.5, y + 0.5, z + 0.5, 1.0, 0.0));
                                 vertices.push(vert(x + 0.5, y + 0.5, z - 0.5, 1.0, 1.0));
@@ -146,7 +158,7 @@ impl ChunkRenderer {
                             }
 
                             if !is_blocking!(chunk, x, y - 1, z) {
-                                let (x, y, z) = (x as f32, y as f32, z as f32);
+                                let (x, y, z) = block_pos;
                                 vertices.push(vert(x - 0.5, y - 0.5, z + 0.5, 0.0, 0.0));
                                 vertices.push(vert(x + 0.5, y - 0.5, z + 0.5, 1.0, 0.0));
                                 vertices.push(vert(x + 0.5, y - 0.5, z - 0.5, 1.0, 1.0));
@@ -156,7 +168,7 @@ impl ChunkRenderer {
                             }
 
                             if !is_blocking!(chunk, x, y, z + 1) {
-                                let (x, y, z) = (x as f32, y as f32, z as f32);
+                                let (x, y, z) = block_pos;
                                 vertices.push(vert(x - 0.5, y - 0.5, z + 0.5, 0.0, 1.0));
                                 vertices.push(vert(x + 0.5, y - 0.5, z + 0.5, 1.0, 1.0));
                                 vertices.push(vert(x + 0.5, y + 0.5, z + 0.5, 1.0, 0.0));
@@ -166,7 +178,7 @@ impl ChunkRenderer {
                             }
 
                             if !is_blocking!(chunk, x, y, z - 1) {
-                                let (x, y, z) = (x as f32, y as f32, z as f32);
+                                let (x, y, z) = block_pos;
                                 vertices.push(vert(x - 0.5, y - 0.5, z - 0.5, 0.0, 1.0));
                                 vertices.push(vert(x + 0.5, y - 0.5, z - 0.5, 1.0, 1.0));
                                 vertices.push(vert(x + 0.5, y + 0.5, z - 0.5, 1.0, 0.0));
@@ -176,7 +188,7 @@ impl ChunkRenderer {
                             }
 
                             if !is_blocking!(chunk, x + 1, y, z) {
-                                let (x, y, z) = (x as f32, y as f32, z as f32);
+                                let (x, y, z) = block_pos;
                                 vertices.push(vert(x + 0.5, y - 0.5, z + 0.5, 1.0, 1.0));
                                 vertices.push(vert(x + 0.5, y - 0.5, z - 0.5, 0.0, 1.0));
                                 vertices.push(vert(x + 0.5, y + 0.5, z - 0.5, 0.0, 0.0));
@@ -186,7 +198,7 @@ impl ChunkRenderer {
                             }
 
                             if !is_blocking!(chunk, x - 1, y, z) {
-                                let (x, y, z) = (x as f32, y as f32, z as f32);
+                                let (x, y, z) = block_pos;
                                 vertices.push(vert(x - 0.5, y - 0.5, z - 0.5, 0.0, 1.0));
                                 vertices.push(vert(x - 0.5, y - 0.5, z + 0.5, 1.0, 1.0));
                                 vertices.push(vert(x - 0.5, y + 0.5, z + 0.5, 1.0, 0.0));

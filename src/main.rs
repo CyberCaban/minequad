@@ -12,7 +12,7 @@ use macroquad::{
 };
 use systems::{
     blocks::{Block, BlockType, RenderSides},
-    chunk::{Chunk, ChunkRenderer},
+    chunk::{Chunk, ChunkRenderer, CHUNK_D, CHUNK_H, CHUNK_W},
     demo_features::DemoFeatures,
 };
 
@@ -25,8 +25,6 @@ fn conf() -> Conf {
         window_width: 1572,
         window_height: 960,
         fullscreen: false,
-        high_dpi: true,
-        sample_count: 4,
         ..Default::default()
     }
 }
@@ -66,20 +64,39 @@ async fn main() {
         b: 250.0 / 255.0,
         a: 1.0,
     };
-    let mut chunk = Chunk::new();
-    chunk.populate((1.0, 0.0, 0.0));
 
-    let mut renderer = ChunkRenderer {
-        mesh: Mesh {
-            vertices: vec![],
-            indices: vec![],
-            texture: None,
-        },
-    };
+    let mut chunks: Vec<Vec<Chunk>> = Vec::new();
+    for i in 0..2 {
+        chunks.push(vec![Chunk::new(), Chunk::new(), Chunk::new()]);
+    }
+    for x in 0..2 {
+        for z in 0..2 {
+            chunks[x][z].populate(((x * CHUNK_W) as f32, ((x + z) as f32).sin().clamp(0.0, 1.0), (z * CHUNK_D) as f32));
+        }
+    }
 
-    renderer.gen_mesh(&chunk, &stone_tex);
+    let mut renderers: Vec<ChunkRenderer> = vec![];
+   
+    for x in 0..2 {
+        for z in 0..2 {
+            renderers.push(ChunkRenderer::new());
+            renderers[ x * 2 + z].gen_mesh(&chunks[x][z], &stone_tex);
+        }
+    }
 
-    
+    // let mut chunk = Chunk::new();
+    // chunk.populate((1.5, 0.0, 0.5));
+
+    // let mut renderer = ChunkRenderer {
+    //     mesh: Mesh {
+    //         vertices: vec![],
+    //         indices: vec![],
+    //         texture: None,
+    //     },
+    // };
+
+    // renderer.gen_mesh(&chunk, &stone_tex);
+
     loop {
         clear_background(LIGHTBLUE);
         if projection == 0 {
@@ -100,7 +117,10 @@ async fn main() {
             WHITE,
         );
 
-        renderer.render_mesh();
+        for r in renderers.iter_mut() {
+            r.render_mesh();
+        }
+        // renderer.render_mesh();
         // demo.render();
 
         ui::root_ui().group(
