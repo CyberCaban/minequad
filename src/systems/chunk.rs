@@ -1,7 +1,8 @@
 use macroquad::{
     color::Color,
-    math::{vec2, vec3},
+    math::{vec2, vec3, vec4},
     models::{draw_mesh, Mesh, Vertex},
+    rand,
     texture::Texture2D,
 };
 
@@ -47,20 +48,30 @@ impl Chunk {
                     // } else {
                     //     BlockType::Air
                     // };
-                    let mut id = if (block_pos.0 + block_pos.2).sin() > 0.0
-                        && (block_pos.1 + block_pos.2.cos()).sin() > 0.0
-                    {
-                        if block_pos.0.sin() <= 0.0 {
-                            if block_pos.1.cos().sin() > 0.0 {
-                                BlockType::Bricks
-                            } else {
-                                BlockType::Grass
-                            }
-                        } else {
-                            BlockType::Stone
-                        }
-                    } else {
+                    // let mut id = if (block_pos.0 + block_pos.2).sin() > 0.0
+                    //     && (block_pos.1 + block_pos.2.cos()).sin() > 0.0
+                    // {
+                    //     if block_pos.0.sin() <= 0.0 {
+                    //         if block_pos.1.cos().sin() > 0.0 {
+                    //             BlockType::Bricks
+                    //         } else {
+                    //             BlockType::Grass
+                    //         }
+                    //     } else {
+                    //         BlockType::Stone
+                    //     }
+                    // } else {
+                    //     BlockType::Air
+                    // };
+                    let id = if block_pos.1 >= 4.0 {
                         BlockType::Air
+                    } else {
+                        match rand::gen_range(0, 8) {
+                            0 => BlockType::Stone,
+                            1 => BlockType::Grass,
+                            2 => BlockType::Bricks,
+                            _ => BlockType::Air,
+                        }
                     };
 
                     // if block_pos.0 == 7.0 && block_pos.1 == 14.0 && block_pos.2 == 7.0 {
@@ -104,11 +115,12 @@ macro_rules! is_blocking {
     };
 }
 
-fn vert(x: f32, y: f32, z: f32, u: f32, v: f32) -> Vertex {
+fn vert(x: f32, y: f32, z: f32, u: f32, v: f32, l: f32) -> Vertex {
     Vertex {
         position: vec3(x + 0.5, y - 0.5, z + 0.5),
         uv: vec2(u, v),
-        color: Color::new(1.0, 1.0, 1.0, 1.0),
+        color: Color::new(l, l, l, 1.0).into(),
+        normal: vec4(0.0, 1.0, 0.0, 1.0),
     }
 }
 fn index(indices: &mut Vec<u16>, idx: &mut u16) {
@@ -157,66 +169,73 @@ impl ChunkRenderer {
                             continue;
                         }
                         _ => {
+                            let mut l;
                             let atlas_size = 8.0;
                             let size = 1.0 / atlas_size;
                             let u = (id % atlas_size) * size;
                             let v = (1.0 - (id / atlas_size + 1.0)) * size + size / 8.0 * id;
                             if !is_blocking!(chunk, x, y + 1, z) {
+                                l = 1.0;
                                 let (x, y, z) = block_pos;
-                                vertices.push(vert(x - 0.5, y + 0.5, z + 0.5, u, v));
-                                vertices.push(vert(x + 0.5, y + 0.5, z + 0.5, u + size, v));
-                                vertices.push(vert(x + 0.5, y + 0.5, z - 0.5, u + size, v + size));
-                                vertices.push(vert(x - 0.5, y + 0.5, z - 0.5, u, v + size));
+                                vertices.push(vert(x - 0.5, y + 0.5, z + 0.5, u, v,l));
+                                vertices.push(vert(x + 0.5, y + 0.5, z + 0.5, u + size, v, l));
+                                vertices.push(vert(x + 0.5, y + 0.5, z - 0.5, u + size, v + size, l));
+                                vertices.push(vert(x - 0.5, y + 0.5, z - 0.5, u, v + size, l));
 
                                 index(&mut indices, &mut idx);
                             }
 
                             if !is_blocking!(chunk, x, y - 1, z) {
+                                l = 0.75;
                                 let (x, y, z) = block_pos;
-                                vertices.push(vert(x - 0.5, y - 0.5, z + 0.5, u, v));
-                                vertices.push(vert(x + 0.5, y - 0.5, z + 0.5, u + size, v));
-                                vertices.push(vert(x + 0.5, y - 0.5, z - 0.5, u + size, v + size));
-                                vertices.push(vert(x - 0.5, y - 0.5, z - 0.5, u, v + size));
+                                vertices.push(vert(x - 0.5, y - 0.5, z + 0.5, u, v, l));
+                                vertices.push(vert(x + 0.5, y - 0.5, z + 0.5, u + size, v, l));
+                                vertices.push(vert(x + 0.5, y - 0.5, z - 0.5, u + size, v + size, l));
+                                vertices.push(vert(x - 0.5, y - 0.5, z - 0.5, u, v + size, l));
 
                                 index(&mut indices, &mut idx);
                             }
 
                             if !is_blocking!(chunk, x, y, z + 1) {
+                                l = 0.9;
                                 let (x, y, z) = block_pos;
-                                vertices.push(vert(x - 0.5, y - 0.5, z + 0.5, u, v + size));
-                                vertices.push(vert(x + 0.5, y - 0.5, z + 0.5, u + size, v + size));
-                                vertices.push(vert(x + 0.5, y + 0.5, z + 0.5, u + size, v));
-                                vertices.push(vert(x - 0.5, y + 0.5, z + 0.5, u, v));
+                                vertices.push(vert(x - 0.5, y - 0.5, z + 0.5, u, v + size,l ));
+                                vertices.push(vert(x + 0.5, y - 0.5, z + 0.5, u + size, v + size,l ));
+                                vertices.push(vert(x + 0.5, y + 0.5, z + 0.5, u + size, v,l ));
+                                vertices.push(vert(x - 0.5, y + 0.5, z + 0.5, u, v,l ));
 
                                 index(&mut indices, &mut idx);
                             }
 
                             if !is_blocking!(chunk, x, y, z - 1) {
+                                l = 0.8;
                                 let (x, y, z) = block_pos;
-                                vertices.push(vert(x - 0.5, y - 0.5, z - 0.5, u, v + size));
-                                vertices.push(vert(x + 0.5, y - 0.5, z - 0.5, u + size, v + size));
-                                vertices.push(vert(x + 0.5, y + 0.5, z - 0.5, u + size, v));
-                                vertices.push(vert(x - 0.5, y + 0.5, z - 0.5, u, v));
+                                vertices.push(vert(x - 0.5, y - 0.5, z - 0.5, u, v + size, l ));
+                                vertices.push(vert(x + 0.5, y - 0.5, z - 0.5, u + size, v + size, l ));
+                                vertices.push(vert(x + 0.5, y + 0.5, z - 0.5, u + size, v, l ));
+                                vertices.push(vert(x - 0.5, y + 0.5, z - 0.5, u, v, l ));
 
                                 index(&mut indices, &mut idx);
                             }
 
                             if !is_blocking!(chunk, x + 1, y, z) {
+                                l = 0.95;
                                 let (x, y, z) = block_pos;
-                                vertices.push(vert(x + 0.5, y - 0.5, z + 0.5, u + size, v + size));
-                                vertices.push(vert(x + 0.5, y - 0.5, z - 0.5, u, v + size));
-                                vertices.push(vert(x + 0.5, y + 0.5, z - 0.5, u, v));
-                                vertices.push(vert(x + 0.5, y + 0.5, z + 0.5, u + size, v));
+                                vertices.push(vert(x + 0.5, y - 0.5, z + 0.5, u + size, v + size, l ));
+                                vertices.push(vert(x + 0.5, y - 0.5, z - 0.5, u, v + size, l ));
+                                vertices.push(vert(x + 0.5, y + 0.5, z - 0.5, u, v, l ));
+                                vertices.push(vert(x + 0.5, y + 0.5, z + 0.5, u + size, v, l ));
 
                                 index(&mut indices, &mut idx);
                             }
 
                             if !is_blocking!(chunk, x - 1, y, z) {
+                                l = 0.85;
                                 let (x, y, z) = block_pos;
-                                vertices.push(vert(x - 0.5, y - 0.5, z - 0.5, u, v + size));
-                                vertices.push(vert(x - 0.5, y - 0.5, z + 0.5, u + size, v + size));
-                                vertices.push(vert(x - 0.5, y + 0.5, z + 0.5, u + size, v));
-                                vertices.push(vert(x - 0.5, y + 0.5, z - 0.5, u, v));
+                                vertices.push(vert(x - 0.5, y - 0.5, z - 0.5, u, v + size,l));
+                                vertices.push(vert(x - 0.5, y - 0.5, z + 0.5, u + size, v + size,l));
+                                vertices.push(vert(x - 0.5, y + 0.5, z + 0.5, u + size, v,l));
+                                vertices.push(vert(x - 0.5, y + 0.5, z - 0.5, u, v,l));
 
                                 index(&mut indices, &mut idx);
                             }
