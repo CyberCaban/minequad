@@ -5,6 +5,7 @@ use macroquad::{
     rand,
     texture::Texture2D,
 };
+use noise::NoiseFn;
 
 pub const CHUNK_W: usize = 16;
 pub const CHUNK_H: usize = 16;
@@ -28,6 +29,58 @@ pub struct Chunk {
     pub position: (f32, f32, f32),
 }
 
+fn get_id_noise(x: f32, y: f32, z: f32) -> BlockType {
+    let perlin = noise::OpenSimplex::default();
+    let id = perlin.get([x as f64, y as f64, z as f64]).clamp(0.0, 1.0) * 5.0;
+    let id = if y <= 4.0 {
+        match id {
+            x if 0.0 >= x && x < 1.0 => BlockType::Stone,
+            x if 1.0 >= x && x < 2.0 => BlockType::Grass,
+            x if 2.0 >= x && x < 3.0 => BlockType::Bricks,
+            _ => BlockType::Air,
+        }
+    } else {
+        BlockType::Air
+    };
+    id
+}
+fn get_id_trig(x: f32, y: f32, z: f32) -> BlockType {
+    let id = ((x.sin() + z.cos()) * 1.0).ceil() * 5.0;
+    let id = if y <= 4.0 {
+        match id {
+            x if 0.0 >= x && x < 1.0 => BlockType::Stone,
+            x if 1.0 >= x && x < 2.0 => BlockType::Grass,
+            x if 2.0 >= x && x < 3.0 => BlockType::Bricks,
+            _ => BlockType::Air,
+        }
+    } else {
+        BlockType::Air
+    };
+    id
+}
+fn get_id_rand(x: f32, y: f32, z: f32) -> BlockType {
+    let id = rand::gen_range(0.0, 5.0);
+    let id = if y <= 4.0 {
+        match id {
+            x if 0.0 >= x && x < 1.0 => BlockType::Stone,
+            x if 1.0 >= x && x < 2.0 => BlockType::Grass,
+            x if 2.0 >= x && x < 3.0 => BlockType::Bricks,
+            _ => BlockType::Air,
+        }
+    } else {
+        BlockType::Air
+    };
+    id
+}
+fn get_id_platform(x: f32, y: f32, z: f32) -> BlockType {
+    let id = if y <= 4.0 {
+        BlockType::Stone
+    } else {
+        BlockType::Air
+    };
+    id
+}
+
 impl Chunk {
     pub fn new() -> Self {
         Self {
@@ -42,46 +95,15 @@ impl Chunk {
         for y in 0..CHUNK_H {
             for z in 0..CHUNK_D {
                 for x in 0..CHUNK_W {
-                    let block_pos = (x as f32, y as f32, z as f32);
-                    // let mut id = if block_pos.0.sin() + block_pos.1.sin() + block_pos.2.sin() > 0.0 {
-                    //     BlockType::Stone
-                    // } else {
-                    //     BlockType::Air
-                    // };
-                    // let mut id = if (block_pos.0 + block_pos.2).sin() > 0.0
-                    //     && (block_pos.1 + block_pos.2.cos()).sin() > 0.0
-                    // {
-                    //     if block_pos.0.sin() <= 0.0 {
-                    //         if block_pos.1.cos().sin() > 0.0 {
-                    //             BlockType::Bricks
-                    //         } else {
-                    //             BlockType::Grass
-                    //         }
-                    //     } else {
-                    //         BlockType::Stone
-                    //     }
-                    // } else {
-                    //     BlockType::Air
-                    // };
-                    let id = if block_pos.1 >= 4.0 {
-                        BlockType::Air
-                    } else {
-                        match rand::gen_range(0, 8) {
-                            0 => BlockType::Stone,
-                            1 => BlockType::Grass,
-                            2 => BlockType::Bricks,
-                            _ => BlockType::Air,
-                        }
-                    };
-
-                    // if block_pos.0 == 7.0 && block_pos.1 == 14.0 && block_pos.2 == 7.0 {
-                    //     id = BlockType::Stone;
-                    // }
-                    // if block_pos.1 <= 2.0 {
-                    //     id = BlockType::Stone
-                    // } else {
-                    //     id = BlockType::Air
-                    // };
+                    let (px, py, pz) = (
+                        x as f32 + position.0,
+                        y as f32 + position.1,
+                        z as f32 + position.2,
+                    );
+                    let id = get_id_noise(px, py, pz);
+                    // let id = get_id_trig(px, py, pz);
+                    // let id = get_id_rand(px, py, pz);
+                    // let id = get_id_platform(px, py, pz);
 
                     blocks[y][z][x] = Block { id };
                 }
@@ -177,9 +199,16 @@ impl ChunkRenderer {
                             if !is_blocking!(chunk, x, y + 1, z) {
                                 l = 1.0;
                                 let (x, y, z) = block_pos;
-                                vertices.push(vert(x - 0.5, y + 0.5, z + 0.5, u, v,l));
+                                vertices.push(vert(x - 0.5, y + 0.5, z + 0.5, u, v, l));
                                 vertices.push(vert(x + 0.5, y + 0.5, z + 0.5, u + size, v, l));
-                                vertices.push(vert(x + 0.5, y + 0.5, z - 0.5, u + size, v + size, l));
+                                vertices.push(vert(
+                                    x + 0.5,
+                                    y + 0.5,
+                                    z - 0.5,
+                                    u + size,
+                                    v + size,
+                                    l,
+                                ));
                                 vertices.push(vert(x - 0.5, y + 0.5, z - 0.5, u, v + size, l));
 
                                 index(&mut indices, &mut idx);
@@ -190,7 +219,14 @@ impl ChunkRenderer {
                                 let (x, y, z) = block_pos;
                                 vertices.push(vert(x - 0.5, y - 0.5, z + 0.5, u, v, l));
                                 vertices.push(vert(x + 0.5, y - 0.5, z + 0.5, u + size, v, l));
-                                vertices.push(vert(x + 0.5, y - 0.5, z - 0.5, u + size, v + size, l));
+                                vertices.push(vert(
+                                    x + 0.5,
+                                    y - 0.5,
+                                    z - 0.5,
+                                    u + size,
+                                    v + size,
+                                    l,
+                                ));
                                 vertices.push(vert(x - 0.5, y - 0.5, z - 0.5, u, v + size, l));
 
                                 index(&mut indices, &mut idx);
@@ -199,10 +235,17 @@ impl ChunkRenderer {
                             if !is_blocking!(chunk, x, y, z + 1) {
                                 l = 0.9;
                                 let (x, y, z) = block_pos;
-                                vertices.push(vert(x - 0.5, y - 0.5, z + 0.5, u, v + size,l ));
-                                vertices.push(vert(x + 0.5, y - 0.5, z + 0.5, u + size, v + size,l ));
-                                vertices.push(vert(x + 0.5, y + 0.5, z + 0.5, u + size, v,l ));
-                                vertices.push(vert(x - 0.5, y + 0.5, z + 0.5, u, v,l ));
+                                vertices.push(vert(x - 0.5, y - 0.5, z + 0.5, u, v + size, l));
+                                vertices.push(vert(
+                                    x + 0.5,
+                                    y - 0.5,
+                                    z + 0.5,
+                                    u + size,
+                                    v + size,
+                                    l,
+                                ));
+                                vertices.push(vert(x + 0.5, y + 0.5, z + 0.5, u + size, v, l));
+                                vertices.push(vert(x - 0.5, y + 0.5, z + 0.5, u, v, l));
 
                                 index(&mut indices, &mut idx);
                             }
@@ -210,10 +253,17 @@ impl ChunkRenderer {
                             if !is_blocking!(chunk, x, y, z - 1) {
                                 l = 0.8;
                                 let (x, y, z) = block_pos;
-                                vertices.push(vert(x - 0.5, y - 0.5, z - 0.5, u, v + size, l ));
-                                vertices.push(vert(x + 0.5, y - 0.5, z - 0.5, u + size, v + size, l ));
-                                vertices.push(vert(x + 0.5, y + 0.5, z - 0.5, u + size, v, l ));
-                                vertices.push(vert(x - 0.5, y + 0.5, z - 0.5, u, v, l ));
+                                vertices.push(vert(x - 0.5, y - 0.5, z - 0.5, u, v + size, l));
+                                vertices.push(vert(
+                                    x + 0.5,
+                                    y - 0.5,
+                                    z - 0.5,
+                                    u + size,
+                                    v + size,
+                                    l,
+                                ));
+                                vertices.push(vert(x + 0.5, y + 0.5, z - 0.5, u + size, v, l));
+                                vertices.push(vert(x - 0.5, y + 0.5, z - 0.5, u, v, l));
 
                                 index(&mut indices, &mut idx);
                             }
@@ -221,10 +271,17 @@ impl ChunkRenderer {
                             if !is_blocking!(chunk, x + 1, y, z) {
                                 l = 0.95;
                                 let (x, y, z) = block_pos;
-                                vertices.push(vert(x + 0.5, y - 0.5, z + 0.5, u + size, v + size, l ));
-                                vertices.push(vert(x + 0.5, y - 0.5, z - 0.5, u, v + size, l ));
-                                vertices.push(vert(x + 0.5, y + 0.5, z - 0.5, u, v, l ));
-                                vertices.push(vert(x + 0.5, y + 0.5, z + 0.5, u + size, v, l ));
+                                vertices.push(vert(
+                                    x + 0.5,
+                                    y - 0.5,
+                                    z + 0.5,
+                                    u + size,
+                                    v + size,
+                                    l,
+                                ));
+                                vertices.push(vert(x + 0.5, y - 0.5, z - 0.5, u, v + size, l));
+                                vertices.push(vert(x + 0.5, y + 0.5, z - 0.5, u, v, l));
+                                vertices.push(vert(x + 0.5, y + 0.5, z + 0.5, u + size, v, l));
 
                                 index(&mut indices, &mut idx);
                             }
@@ -232,10 +289,17 @@ impl ChunkRenderer {
                             if !is_blocking!(chunk, x - 1, y, z) {
                                 l = 0.85;
                                 let (x, y, z) = block_pos;
-                                vertices.push(vert(x - 0.5, y - 0.5, z - 0.5, u, v + size,l));
-                                vertices.push(vert(x - 0.5, y - 0.5, z + 0.5, u + size, v + size,l));
-                                vertices.push(vert(x - 0.5, y + 0.5, z + 0.5, u + size, v,l));
-                                vertices.push(vert(x - 0.5, y + 0.5, z - 0.5, u, v,l));
+                                vertices.push(vert(x - 0.5, y - 0.5, z - 0.5, u, v + size, l));
+                                vertices.push(vert(
+                                    x - 0.5,
+                                    y - 0.5,
+                                    z + 0.5,
+                                    u + size,
+                                    v + size,
+                                    l,
+                                ));
+                                vertices.push(vert(x - 0.5, y + 0.5, z + 0.5, u + size, v, l));
+                                vertices.push(vert(x - 0.5, y + 0.5, z - 0.5, u, v, l));
 
                                 index(&mut indices, &mut idx);
                             }

@@ -5,14 +5,9 @@ use std::{rc::Rc, vec};
 
 use macroquad::{
     prelude::*,
-    ui::{
-        self, hash,
-        widgets::{self, Texture},
-    },
+    ui::{self, hash},
 };
-use systems::{
-    chunk::{Chunk, ChunkRenderer, CHUNK_D, CHUNK_H, CHUNK_W},
-};
+use systems::chunk::{Chunk, ChunkRenderer, CHUNK_D, CHUNK_W};
 
 use crate::systems::controls::*;
 
@@ -22,6 +17,8 @@ fn conf() -> Conf {
         window_width: 1572,
         window_height: 960,
         fullscreen: false,
+
+        sample_count: 4,
         ..Default::default()
     }
 }
@@ -58,21 +55,28 @@ async fn main() {
     };
 
     let mut chunks: Vec<Vec<Chunk>> = Vec::new();
-    for _ in 0..3 {
-        chunks.push(vec![Chunk::new(), Chunk::new(), Chunk::new()]);
+    for _ in 0..6 {
+        chunks.push(vec![
+            Chunk::new(),
+            Chunk::new(),
+            Chunk::new(),
+            Chunk::new(),
+            Chunk::new(),
+            Chunk::new(),
+        ]);
     }
-    for x in 0..3 {
-        for z in 0..3 {
+    for x in 0..6 {
+        for z in 0..6 {
             chunks[x][z].populate(((x * CHUNK_W) as f32, 0.0, (z * CHUNK_D) as f32));
         }
     }
 
     let mut renderers: Vec<ChunkRenderer> = vec![];
-   
-    for x in 0..3 {
-        for z in 0..3 {
+
+    for x in 0..6 {
+        for z in 0..6 {
             renderers.push(ChunkRenderer::new());
-            renderers[ x * 3 + z].gen_mesh(&chunks[x][z], &atlas);
+            renderers[x * 6 + z].gen_mesh(&chunks[x][z], &atlas);
         }
     }
 
