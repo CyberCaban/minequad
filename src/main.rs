@@ -3,11 +3,11 @@ mod systems;
 
 use std::{rc::Rc, vec};
 
+use ::rand::random;
 use macroquad::{
     prelude::*,
     ui::{self, hash},
 };
-use ::rand::random;
 use systems::chunk::{Chunk, ChunkRenderer, CHUNK_D, CHUNK_H, CHUNK_W};
 
 use crate::systems::controls::*;
@@ -57,7 +57,11 @@ fn create_chunks(length: usize, width: usize, height: usize, seed: i32) -> Vec<V
     for x in 0..length {
         for z in 0..width {
             for y in 0..height {
-                chunks[x][z][y].populate(((x * CHUNK_W) as f32, (y * CHUNK_H) as f32, (z * CHUNK_D) as f32));
+                chunks[x][z][y].populate((
+                    (x * CHUNK_W) as f32,
+                    (y * CHUNK_H) as f32,
+                    (z * CHUNK_D) as f32,
+                ));
             }
         }
     }
@@ -94,7 +98,7 @@ async fn main() {
     };
 
     let seed = random();
-    let chunks = create_chunks(16,16, 1, seed);
+    let chunks = create_chunks(16, 16, 1, seed);
     let mut renderers = create_renderers(&chunks, &atlas);
 
     loop {
@@ -109,7 +113,6 @@ async fn main() {
         for r in renderers.iter_mut() {
             r.render_mesh();
         }
-
 
         ui::root_ui().group(
             hash!(),
