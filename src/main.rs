@@ -8,7 +8,7 @@ use macroquad::{
     ui::{self, hash},
 };
 use ::rand::random;
-use systems::chunk::{Chunk, ChunkRenderer, CHUNK_D, CHUNK_W};
+use systems::chunk::{Chunk, ChunkRenderer, CHUNK_D, CHUNK_H, CHUNK_W};
 
 use crate::systems::controls::*;
 
@@ -41,24 +41,30 @@ async fn load_tex() -> Vec<Rc<Texture2D>> {
 
 static ATLAS: &[u8] = include_bytes!("../assets/textures/atlas.png");
 
-fn create_chunks(length: usize, width: usize, seed: i32) -> Vec<Vec<Chunk>> {
-    let mut chunks: Vec<Vec<Chunk>> = Vec::new();
+fn create_chunks(length: usize, width: usize, height: usize, seed: i32) -> Vec<Vec<Vec<Chunk>>> {
+    let mut chunks: Vec<Vec<Vec<Chunk>>> = Vec::new();
     for _ in 0..length {
-        let mut row: Vec<Chunk> = Vec::new();
+        let mut rows: Vec<Vec<Chunk>> = Vec::new();
         for _ in 0..width {
-            row.push(Chunk::new(seed));
+            let mut column: Vec<Chunk> = Vec::new();
+            for _ in 0..height {
+                column.push(Chunk::new(seed));
+            }
+            rows.push(column);
         }
-        chunks.push(row);
+        chunks.push(rows);
     }
     for x in 0..length {
         for z in 0..width {
-            chunks[x][z].populate(((x * CHUNK_W) as f32, 0.0, (z * CHUNK_D) as f32));
+            for y in 0..height {
+                chunks[x][z][y].populate(((x * CHUNK_W) as f32, (y * CHUNK_H) as f32, (z * CHUNK_D) as f32));
+            }
         }
     }
     chunks
 }
 
-fn create_renderers(chunks: &Vec<Vec<Chunk>>, atlas: &Texture2D) -> Vec<ChunkRenderer> {
+fn create_renderers(chunks: &Vec<Vec<Vec<Chunk>>>, atlas: &Texture2D) -> Vec<ChunkRenderer> {
     let mut renderers: Vec<ChunkRenderer> = vec![];
     let length = chunks.len();
     let width = chunks[0].len();
@@ -66,7 +72,7 @@ fn create_renderers(chunks: &Vec<Vec<Chunk>>, atlas: &Texture2D) -> Vec<ChunkRen
     for x in 0..length {
         for z in 0..width {
             let mut renderer = ChunkRenderer::new();
-            renderer.gen_mesh(&chunks[x][z], atlas);
+            renderer.gen_mesh(&chunks[x][z][0], atlas);
             renderers.push(renderer);
         }
     }
@@ -88,7 +94,7 @@ async fn main() {
     };
 
     let seed = random();
-    let chunks = create_chunks(8, 8, seed);
+    let chunks = create_chunks(16,16, 1, seed);
     let mut renderers = create_renderers(&chunks, &atlas);
 
     loop {
@@ -103,6 +109,7 @@ async fn main() {
         for r in renderers.iter_mut() {
             r.render_mesh();
         }
+
 
         ui::root_ui().group(
             hash!(),
