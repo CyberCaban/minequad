@@ -7,6 +7,7 @@ use macroquad::{
     prelude::*,
     ui::{self, hash},
 };
+use ::rand::random;
 use systems::chunk::{Chunk, ChunkRenderer, CHUNK_D, CHUNK_W};
 
 use crate::systems::controls::*;
@@ -40,6 +41,38 @@ async fn load_tex() -> Vec<Rc<Texture2D>> {
 
 static ATLAS: &[u8] = include_bytes!("../assets/textures/atlas.png");
 
+fn create_chunks(length: usize, width: usize, seed: i32) -> Vec<Vec<Chunk>> {
+    let mut chunks: Vec<Vec<Chunk>> = Vec::new();
+    for _ in 0..length {
+        let mut row: Vec<Chunk> = Vec::new();
+        for _ in 0..width {
+            row.push(Chunk::new(seed));
+        }
+        chunks.push(row);
+    }
+    for x in 0..length {
+        for z in 0..width {
+            chunks[x][z].populate(((x * CHUNK_W) as f32, 0.0, (z * CHUNK_D) as f32));
+        }
+    }
+    chunks
+}
+
+fn create_renderers(chunks: &Vec<Vec<Chunk>>, atlas: &Texture2D) -> Vec<ChunkRenderer> {
+    let mut renderers: Vec<ChunkRenderer> = vec![];
+    let length = chunks.len();
+    let width = chunks[0].len();
+
+    for x in 0..length {
+        for z in 0..width {
+            let mut renderer = ChunkRenderer::new();
+            renderer.gen_mesh(&chunks[x][z], atlas);
+            renderers.push(renderer);
+        }
+    }
+    renderers
+}
+
 #[macroquad::main(conf)]
 async fn main() {
     let atlas = Texture2D::from_file_with_format(ATLAS, Some(ImageFormat::Png));
@@ -47,57 +80,25 @@ async fn main() {
 
     let mut player = Player::new();
     let mut projection = 0;
-    let LIGHTBLUE = Color {
+    let lightblue = Color {
         r: 135.0 / 255.0,
         g: 206.0 / 255.0,
         b: 250.0 / 255.0,
         a: 1.0,
     };
 
-    let mut chunks: Vec<Vec<Chunk>> = Vec::new();
-    for _ in 0..6 {
-        chunks.push(vec![
-            Chunk::new(),
-            Chunk::new(),
-            Chunk::new(),
-            Chunk::new(),
-            Chunk::new(),
-            Chunk::new(),
-        ]);
-    }
-    for x in 0..6 {
-        for z in 0..6 {
-            chunks[x][z].populate(((x * CHUNK_W) as f32, 0.0, (z * CHUNK_D) as f32));
-        }
-    }
-
-    let mut renderers: Vec<ChunkRenderer> = vec![];
-
-    for x in 0..6 {
-        for z in 0..6 {
-            renderers.push(ChunkRenderer::new());
-            renderers[x * 6 + z].gen_mesh(&chunks[x][z], &atlas);
-        }
-    }
+    let seed = random();
+    let chunks = create_chunks(8, 8, seed);
+    let mut renderers = create_renderers(&chunks, &atlas);
 
     loop {
-        clear_background(LIGHTBLUE);
+        clear_background(lightblue);
         if projection == 0 {
             player.projection = Projection::Perspective;
         } else if projection == 1 {
             player.projection = Projection::Orthographics;
         }
         player.update();
-
-        draw_grid(100, 1., BLACK, GRAY);
-
-        // Going 3d!
-        draw_cube(
-            vec3(-4.5, 0.5, -2.5),
-            vec3(1.0, 1.0, 1.0),
-            Some(&atlas),
-            WHITE,
-        );
 
         for r in renderers.iter_mut() {
             r.render_mesh();

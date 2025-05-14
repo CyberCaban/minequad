@@ -1,3 +1,4 @@
+use ::rand::random;
 use macroquad::{
     color::Color,
     math::{vec2, vec3, vec4},
@@ -5,7 +6,6 @@ use macroquad::{
     rand,
     texture::Texture2D,
 };
-use noise::NoiseFn;
 
 pub const CHUNK_W: usize = 16;
 pub const CHUNK_H: usize = 16;
@@ -27,11 +27,15 @@ pub struct Block {
 pub struct Chunk {
     pub blocks: [[[Block; CHUNK_W]; CHUNK_H]; CHUNK_D],
     pub position: (f32, f32, f32),
+    pub seed: i32,
 }
 
-fn get_id_noise(x: f32, y: f32, z: f32) -> BlockType {
-    let perlin = noise::OpenSimplex::default();
-    let id = perlin.get([x as f64, y as f64, z as f64]).clamp(0.0, 1.0) * 5.0;
+fn get_id_noise(x: f32, y: f32, z: f32, seed: i32) -> BlockType {
+    let mut noise = fastnoise_lite::FastNoiseLite::new();
+    noise.set_noise_type(Some(fastnoise_lite::NoiseType::Perlin));
+    noise.set_seed(Some(seed));
+    let id = noise.get_noise_2d(x, z) * 10.0;
+    // print!("{} {} {}: {}\n", x, y, z, id);
     let id = if y <= 4.0 {
         match id {
             x if 0.0 >= x && x < 1.0 => BlockType::Stone,
@@ -82,10 +86,11 @@ fn get_id_platform(x: f32, y: f32, z: f32) -> BlockType {
 }
 
 impl Chunk {
-    pub fn new() -> Self {
+    pub fn new(seed: i32) -> Self {
         Self {
             blocks: [[[Block { id: BlockType::Air }; CHUNK_W]; CHUNK_H]; CHUNK_D],
             position: (0.0, 0.0, 0.0),
+            seed,
         }
     }
     pub fn populate(&mut self, position: (f32, f32, f32)) {
@@ -100,7 +105,7 @@ impl Chunk {
                         y as f32 + position.1,
                         z as f32 + position.2,
                     );
-                    let id = get_id_noise(px, py, pz);
+                    let id = get_id_noise(px, py, pz, self.seed);
                     // let id = get_id_trig(px, py, pz);
                     // let id = get_id_rand(px, py, pz);
                     // let id = get_id_platform(px, py, pz);
@@ -318,4 +323,21 @@ impl ChunkRenderer {
     pub fn render_mesh(&mut self) {
         draw_mesh(&self.mesh);
     }
+}
+
+fn create_chunks(length: usize, width: usize, seed: i32) -> Vec<Vec<Chunk>> {
+    let mut chunks: Vec<Vec<Chunk>> = Vec::new();
+    for _ in 0..length {
+        let mut row: Vec<Chunk> = Vec::new();
+        for _ in 0..width {
+            row.push(Chunk::new(seed));
+        }
+        chunks.push(row);
+    }
+    for x in 0..length {
+        for z in 0..width {
+            chunks[x][z].populate(((x * CHUNK_W) as f32, 0.0, (z * CHUNK_D) as f32));
+        }
+    }
+    chunks
 }
