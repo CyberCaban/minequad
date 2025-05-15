@@ -162,7 +162,7 @@ impl ChunkRenderer {
             },
         }
     }
-    pub fn gen_mesh(&mut self, chunk: &Chunk, texture: &Texture2D) {
+    pub fn gen_mesh(&mut self, chunk: &Chunk, texture: &Texture2D, chunks: &Vec<Vec<Vec<Chunk>>>) {
         let mut vertices: Vec<Vertex> = Vec::new();
         let mut idx: u16 = 0;
         let mut indices: Vec<u16> = Vec::new();

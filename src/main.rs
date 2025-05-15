@@ -76,7 +76,7 @@ fn create_renderers(chunks: &Vec<Vec<Vec<Chunk>>>, atlas: &Texture2D) -> Vec<Chu
     for x in 0..length {
         for z in 0..width {
             let mut renderer = ChunkRenderer::new();
-            renderer.gen_mesh(&chunks[x][z][0], atlas);
+            renderer.gen_mesh(&chunks[x][z][0], atlas, chunks);
             renderers.push(renderer);
         }
     }
